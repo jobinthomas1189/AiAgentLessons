@@ -2,10 +2,15 @@
 
 Python scripts demonstrating LangChain/LangGraph concepts, based on the official documentation.
 
+
+## Explain the 3 directories
 ## Setup
 
 ```bash
-pip install -r requirements.txt
+python3.12 -m venv aienv
+source aienv/bin/activate
+pip install -r agentic_files/requirements.txt
+python {agentic_file}
 ```
 
 For `01_quickstart.py`, set `ANTHROPIC_API_KEY` (or use another model via `init_chat_model`).
