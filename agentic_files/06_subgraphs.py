@@ -115,7 +115,7 @@ def demo_add_subgraph_as_node():
 # --- Stream with subgraphs ---
 def demo_stream_subgraphs():
     """Stream updates including subgraph nodes."""
-    print("=== Stream with subgraphs=True ===\n")
+    print("=== Stream with subgraphs=True (v2 stream format) ===\n")
 
     builder = StateGraph(ParentState)
     builder.add_node("node_1", node_1)
@@ -127,15 +127,13 @@ def demo_stream_subgraphs():
 
     print("Stream chunks:")
     for chunk in graph.stream(
-        {"foo": "foo"}, stream_mode="updates", subgraphs=True
+        {"foo": "foo"},
+        stream_mode="updates",
+        subgraphs=True,
+        version="v2",
     ):
-        # v1 returns (ns, data) tuples; v2 returns StreamPart dicts
-        if isinstance(chunk, dict) and chunk.get("type") == "updates":
-            print("  ns:", chunk.get("ns"), "data:", chunk.get("data"))
-        elif isinstance(chunk, tuple):
-            print("  chunk:", chunk)
-        else:
-            print("  chunk:", chunk)
+        if chunk["type"] == "updates":
+            print("  ns:", chunk["ns"], "data:", chunk["data"])
 
 
 if __name__ == "__main__":

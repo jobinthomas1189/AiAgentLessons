@@ -121,6 +121,7 @@ def run_graph_api_example():
 from langgraph.graph import add_messages
 from langgraph.func import entrypoint, task
 from langchain_core.messages import BaseMessage
+from langchain.messages import ToolCall
 
 
 @task
@@ -137,10 +138,10 @@ def call_llm(messages: list[BaseMessage]):
 
 
 @task
-def call_tool(tool_call):
+def call_tool(tool_call: ToolCall):
     """Performs the tool call"""
     tool = tools_by_name[tool_call["name"]]
-    return tool.invoke(tool_call["args"])
+    return tool.invoke(tool_call)
 
 
 @entrypoint()
@@ -153,12 +154,8 @@ def functional_agent(messages: list[BaseMessage]):
         tool_result_futures = [
             call_tool(tc) for tc in model_response.tool_calls
         ]
-        raw_results = [fut.result() for fut in tool_result_futures]
-        tool_messages = [
-            ToolMessage(content=str(r), tool_call_id=tc["id"])
-            for r, tc in zip(raw_results, model_response.tool_calls)
-        ]
-        messages = add_messages(messages, [model_response, *tool_messages])
+        tool_results = [fut.result() for fut in tool_result_futures]
+        messages = add_messages(messages, [model_response, *tool_results])
         model_response = call_llm(messages).result()
     messages = add_messages(messages, model_response)
     return messages
