@@ -42,3 +42,37 @@ python 07_handoffs.py
 # 01 requires ANTHROPIC_API_KEY
 python 01_quickstart.py
 ```
+
+## LangGraph Server
+
+Run the calculator agent as a local API server with LangGraph Studio:
+
+```bash
+cd agentic_files
+cp .env.example .env   # Edit .env and add ANTHROPIC_API_KEY (required)
+pip install -r requirements.txt
+langgraph dev
+```
+
+- **API**: http://localhost:2024
+- **Docs**: http://localhost:2024/docs
+- **Studio**: Opens in browser for visualization and debugging
+
+Test with the SDK:
+
+```python
+from langgraph_sdk import get_sync_client
+
+client = get_sync_client(url="http://localhost:2024")
+for chunk in client.runs.stream(
+    None,
+    "calculator",
+    input={"messages": [{"role": "human", "content": "Add 3 and 4."}]},
+    stream_mode="messages-tuple",
+):
+    print(chunk)
+```
+
+## LangSmith Tracing
+
+Set `LANGSMITH_API_KEY` in `.env` to trace runs in [LangSmith](https://smith.langchain.com/). Get a free API key at [smith.langchain.com/settings](https://smith.langchain.com/settings).

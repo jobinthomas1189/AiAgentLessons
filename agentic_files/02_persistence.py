@@ -86,22 +86,30 @@ def demo_update_state():
     print()
 
 
-def demo_filter_history():
-    """Filter state history by criteria."""
-    print("=== Filter State History ===\n")
-
+def _build_persistence_graph():
+    """Build the main persistence demo graph (node_a -> node_b)."""
     workflow = StateGraph(State)
     workflow.add_node("node_a", node_a)
     workflow.add_node("node_b", node_b)
     workflow.add_edge(START, "node_a")
     workflow.add_edge("node_a", "node_b")
     workflow.add_edge("node_b", END)
-    checkpointer = InMemorySaver()
-    graph = workflow.compile(checkpointer=checkpointer)
+    return workflow.compile(checkpointer=InMemorySaver())
+
+
+def get_graphs_for_mermaid():
+    """Return (name, graph) tuples for mermaid export."""
+    return [("02_persistence", _build_persistence_graph())]
+
+
+def demo_filter_history():
+    """Filter state history by criteria."""
+    print("=== Filter State History ===\n")
+
+    graph = _build_persistence_graph()
 
     config = {"configurable": {"thread_id": "filter-demo"}}
     graph.invoke({"foo": "", "bar": []}, config)
-
     history = list(graph.get_state_history(config))
     before_node_b = next(s for s in history if s.next == ("node_b",))
     step_2 = next(s for s in history if s.metadata.get("step") == 2)
