@@ -10,8 +10,13 @@ from langchain.messages import SystemMessage, ToolMessage, AnyMessage
 from typing_extensions import TypedDict, Annotated
 from typing import Literal
 import operator
+from pathlib import Path
+from dotenv import load_dotenv
 
 from langgraph.graph import StateGraph, START, END
+
+# Load local env file for direct imports/runs (langgraph dev also loads via config).
+load_dotenv(Path(__file__).with_name(".env"))
 
 
 @tool
