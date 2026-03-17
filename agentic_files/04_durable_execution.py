@@ -17,7 +17,7 @@ import uuid
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.func import task
 from langgraph.graph import StateGraph, START, END
-
+from pathlib import Path
 
 # --- Without task: Side effect runs on every resume ---
 class StateBasic(TypedDict):
@@ -51,10 +51,7 @@ def call_api_with_task(state: StateWithTask):
     return {"result": outputs}
 
 
-def demo_durable_execution():
-    """Demonstrate durable execution with checkpointer and thread_id."""
-    print("=== Durable Execution ===\n")
-
+def _build_durable_execution_graph():
     class SimpleState(TypedDict):
         step: str
         count: int
@@ -71,9 +68,14 @@ def demo_durable_execution():
     builder.add_edge(START, "node_a")
     builder.add_edge("node_a", "node_b")
     builder.add_edge("node_b", END)
+    return builder.compile(checkpointer=InMemorySaver())
 
-    checkpointer = InMemorySaver()
-    graph = builder.compile(checkpointer=checkpointer)
+
+def demo_durable_execution():
+    """Demonstrate durable execution with checkpointer and thread_id."""
+    print("=== Durable Execution ===\n")
+
+    graph = _build_durable_execution_graph()
 
     thread_id = str(uuid.uuid4())
     config = {"configurable": {"thread_id": thread_id}}
@@ -97,17 +99,19 @@ def demo_durable_execution():
     print()
 
 
-def demo_task_wrapping():
-    """Demonstrate wrapping side effects in @task."""
-    print("=== Task Wrapping for Idempotency ===\n")
-
+def _build_task_wrapping_graph():
     builder = StateGraph(StateWithTask)
     builder.add_node("call_api", call_api_with_task)
     builder.add_edge(START, "call_api")
     builder.add_edge("call_api", END)
+    return builder.compile(checkpointer=InMemorySaver())
 
-    checkpointer = InMemorySaver()
-    graph = builder.compile(checkpointer=checkpointer)
+
+def demo_task_wrapping():
+    """Demonstrate wrapping side effects in @task."""
+    print("=== Task Wrapping for Idempotency ===\n")
+
+    graph = _build_task_wrapping_graph()
 
     config = {"configurable": {"thread_id": str(uuid.uuid4())}}
     result = graph.invoke(
@@ -118,5 +122,12 @@ def demo_task_wrapping():
 
 
 if __name__ == "__main__":
+    from utils.create_mermaid import build_and_save_mermaid
+
+    output_dir = Path(__file__).resolve().parent.parent / "mermaids"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    build_and_save_mermaid("04_durable_execution", _build_durable_execution_graph(), output_dir)
+    build_and_save_mermaid("04_task_wrapping", _build_task_wrapping_graph(), output_dir)
+
     demo_durable_execution()
     demo_task_wrapping()

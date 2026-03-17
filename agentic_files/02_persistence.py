@@ -16,7 +16,7 @@ from operator import add
 
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import StateGraph, START, END
-
+from pathlib import Path
 
 # --- Define state with reducer ---
 class State(TypedDict):
@@ -118,6 +118,13 @@ def demo_filter_history():
 
 
 if __name__ == "__main__":
+    from utils.create_mermaid import build_and_save_mermaid
+
+    output_dir = Path(__file__).resolve().parent.parent / "mermaids"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for name, graph in get_graphs_for_mermaid():
+        build_and_save_mermaid(name, graph, output_dir)
+
     demo_checkpoints()
     demo_update_state()
     demo_filter_history()

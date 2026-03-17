@@ -13,7 +13,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 AGENTIC_DIR = SCRIPT_DIR.parent
 LESSONS_DIR = AGENTIC_DIR.parent
-MERMAID_DIR = LESSONS_DIR / "mermaid"
+MERMAID_DIR = LESSONS_DIR / "mermaids"
 sys.path.insert(0, str(AGENTIC_DIR))
 
 OUTPUT_DIR = SCRIPT_DIR  # Store .png files in utils/

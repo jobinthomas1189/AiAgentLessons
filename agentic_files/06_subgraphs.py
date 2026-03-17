@@ -11,7 +11,7 @@ Concepts:
 
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END
-
+from pathlib import Path
 
 # --- Pattern 1: Call subgraph inside a node (different state schemas) ---
 class SubgraphState(TypedDict):
@@ -52,17 +52,21 @@ def node_1(state: ParentState):
     return {"foo": "hi! " + state["foo"]}
 
 
-def demo_call_subgraph_inside_node():
-    """Subgraph with different state - invoked inside a wrapper node."""
-    print("=== Call Subgraph Inside Node (Different State) ===\n")
-
+def _build_call_subgraph_graph():
     builder = StateGraph(ParentState)
     builder.add_node("node_1", node_1)
     builder.add_node("node_2", call_subgraph)
     builder.add_edge(START, "node_1")
     builder.add_edge("node_1", "node_2")
     builder.add_edge("node_2", END)
-    graph = builder.compile()
+    return builder.compile()
+
+
+def demo_call_subgraph_inside_node():
+    """Subgraph with different state - invoked inside a wrapper node."""
+    print("=== Call Subgraph Inside Node (Different State) ===\n")
+
+    graph = _build_call_subgraph_graph()
 
     result = graph.invoke({"foo": "foo"})
     print("Result:", result)
@@ -87,10 +91,7 @@ def parent_node_1(state: SharedState):
     return {"foo": "hi! " + state["foo"]}
 
 
-def demo_add_subgraph_as_node():
-    """Subgraph with shared state - added directly as node."""
-    print("=== Add Subgraph as Node (Shared State) ===\n")
-
+def _build_add_subgraph_as_node_graph():
     subgraph_shared_builder = StateGraph(SharedState)
     subgraph_shared_builder.add_node("sg_1", subgraph_shared_node_1)
     subgraph_shared_builder.add_node("sg_2", subgraph_shared_node_2)
@@ -105,7 +106,14 @@ def demo_add_subgraph_as_node():
     builder.add_edge(START, "node_1")
     builder.add_edge("node_1", "node_2")
     builder.add_edge("node_2", END)
-    graph = builder.compile()
+    return builder.compile()
+
+
+def demo_add_subgraph_as_node():
+    """Subgraph with shared state - added directly as node."""
+    print("=== Add Subgraph as Node (Shared State) ===\n")
+
+    graph = _build_add_subgraph_as_node_graph()
 
     result = graph.invoke({"foo": "foo", "bar": ""})
     print("Result:", result)
@@ -117,13 +125,7 @@ def demo_stream_subgraphs():
     """Stream updates including subgraph nodes."""
     print("=== Stream with subgraphs=True (v2 stream format) ===\n")
 
-    builder = StateGraph(ParentState)
-    builder.add_node("node_1", node_1)
-    builder.add_node("node_2", call_subgraph)
-    builder.add_edge(START, "node_1")
-    builder.add_edge("node_1", "node_2")
-    builder.add_edge("node_2", END)
-    graph = builder.compile()
+    graph = _build_call_subgraph_graph()
 
     print("Stream chunks:")
     for chunk in graph.stream(
@@ -132,11 +134,22 @@ def demo_stream_subgraphs():
         subgraphs=True,
         version="v2",
     ):
-        if chunk["type"] == "updates":
+        # v2: dict with type/ns/data; v1 subgraphs: (ns, data) tuple
+        if isinstance(chunk, dict) and chunk.get("type") == "updates":
             print("  ns:", chunk["ns"], "data:", chunk["data"])
+        elif isinstance(chunk, (list, tuple)) and len(chunk) >= 2:
+            ns, data = chunk[0], chunk[1]
+            print("  ns:", ns, "data:", data)
 
 
 if __name__ == "__main__":
+    from utils.create_mermaid import build_and_save_mermaid
+
+    output_dir = Path(__file__).resolve().parent.parent / "mermaids"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    build_and_save_mermaid("06_subgraphs_call_subgraph", _build_call_subgraph_graph(), output_dir)
+    build_and_save_mermaid("06_subgraphs_add_as_node", _build_add_subgraph_as_node_graph(), output_dir)
+
     demo_call_subgraph_inside_node()
     demo_add_subgraph_as_node()
     demo_stream_subgraphs()

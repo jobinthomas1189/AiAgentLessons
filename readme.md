@@ -47,10 +47,11 @@ python 01_quickstart.py
 
 Run the calculator agent as a local API server with LangGraph Studio:
 
+Detailed setup guide: [`LANGGRAPH_SERVER_SETUP.md`](./LANGGRAPH_SERVER_SETUP.md)
+
 ```bash
-cd agentic_files
-cp .env.example .env   # Edit .env and add ANTHROPIC_API_KEY (required)
-pip install -r requirements.txt
+cp agentic_files/.env.example agentic_files/.env   # Edit and add ANTHROPIC_API_KEY (required)
+pip install -r agentic_files/requirements.txt
 langgraph dev
 ```
 

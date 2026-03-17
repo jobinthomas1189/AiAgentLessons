@@ -1,6 +1,6 @@
 """
 Server-ready graph for LangGraph dev server.
-Calculator agent - same as 01_quickstart but compiled with checkpointer.
+Calculator agent - same as 01_quickstart, compiled for LangGraph API runtime.
 Exported as `graph` for langgraph.json.
 """
 
@@ -12,7 +12,6 @@ from typing import Literal
 import operator
 
 from langgraph.graph import StateGraph, START, END
-from langgraph.checkpoint.memory import InMemorySaver
 
 
 @tool
@@ -84,4 +83,4 @@ builder.add_edge(START, "llm_call")
 builder.add_conditional_edges("llm_call", should_continue, ["tool_node", END])
 builder.add_edge("tool_node", "llm_call")
 
-graph = builder.compile(checkpointer=InMemorySaver())
+graph = builder.compile()
