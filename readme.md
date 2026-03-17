@@ -18,7 +18,7 @@ For `01_quickstart.py`, set `ANTHROPIC_API_KEY` (or use another model via `init_
 
 ## Scripts
 
-| File | Concept | Source |
+| File | Concept | Langgraph Doc |
 |------|---------|--------|
 | `01_quickstart.py` | Calculator agent with **Graph API** and **Functional API** | [quickstart](https://docs.langchain.com/oss/python/langgraph/quickstart) |
 | `02_persistence.py` | Checkpointing, **threads**, `get_state`, `update_state`, history | [persistence](https://docs.langchain.com/oss/python/langgraph/persistence) |
