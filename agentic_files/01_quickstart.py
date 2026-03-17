@@ -18,6 +18,7 @@ import operator
 
 # --- Graph API ---
 from langgraph.graph import StateGraph, START, END
+from pathlib import Path
 
 # 1. Define tools and model
 model = init_chat_model("claude-sonnet-4-6", temperature=0)
@@ -171,5 +172,11 @@ def run_functional_api_example():
 
 
 if __name__ == "__main__":
+    from utils.create_mermaid import build_and_save_mermaid
+
+    output_dir = Path(__file__).resolve().parent.parent / "mermaids"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    build_and_save_mermaid("01_quickstart", build_graph_api_agent(), output_dir)
+
     run_graph_api_example()
     run_functional_api_example()

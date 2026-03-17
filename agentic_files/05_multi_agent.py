@@ -17,7 +17,7 @@ from typing import Literal
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import InMemorySaver
 from typing_extensions import TypedDict
-
+from pathlib import Path
 
 # --- Shared state for multi-agent ---
 class MultiAgentState(TypedDict):
@@ -64,10 +64,7 @@ def route_after_router(state: MultiAgentState) -> Literal["coding_agent", "math_
     return state.get("routed_to") or "general_agent"
 
 
-def demo_router_pattern():
-    """Router pattern: classify input, direct to one agent, synthesize."""
-    print("=== Multi-Agent: Router Pattern ===\n")
-
+def _build_router_graph():
     builder = StateGraph(MultiAgentState)
     builder.add_node("router", router_node)
     builder.add_node("coding_agent", coding_agent_node)
@@ -83,8 +80,14 @@ def demo_router_pattern():
     builder.add_edge("coding_agent", END)
     builder.add_edge("math_agent", END)
     builder.add_edge("general_agent", END)
+    return builder.compile(checkpointer=InMemorySaver())
 
-    graph = builder.compile(checkpointer=InMemorySaver())
+
+def demo_router_pattern():
+    """Router pattern: classify input, direct to one agent, synthesize."""
+    print("=== Multi-Agent: Router Pattern ===\n")
+
+    graph = _build_router_graph()
 
     # Test routing
     for query in ["Help me with Python code", "Calculate 2+2", "Hello!"]:
@@ -99,4 +102,10 @@ def demo_router_pattern():
 
 
 if __name__ == "__main__":
+    from utils.create_mermaid import build_and_save_mermaid
+
+    output_dir = Path(__file__).resolve().parent.parent / "mermaids"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    build_and_save_mermaid("05_multi_agent", _build_router_graph(), output_dir)
+
     demo_router_pattern()

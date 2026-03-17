@@ -14,7 +14,7 @@ from typing import Literal, Optional, TypedDict
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import StateGraph, START, END
 from langgraph.types import Command, interrupt
-
+from pathlib import Path
 
 # --- Approval Workflow ---
 class ApprovalState(TypedDict):
@@ -79,10 +79,7 @@ def run_with_human_input(graph, initial_input: dict, config: dict):
     return result
 
 
-def demo_approval_workflow():
-    """Demonstrate approval/reject workflow with interrupt."""
-    print("=== Approval Workflow ===\n")
-
+def _build_approval_graph():
     builder = StateGraph(ApprovalState)
     builder.add_node("approval", approval_node)
     builder.add_node("proceed", proceed_node)
@@ -90,9 +87,14 @@ def demo_approval_workflow():
     builder.add_edge(START, "approval")
     builder.add_edge("proceed", END)
     builder.add_edge("cancel", END)
+    return builder.compile(checkpointer=InMemorySaver())
 
-    checkpointer = InMemorySaver()
-    graph = builder.compile(checkpointer=checkpointer)
+
+def demo_approval_workflow():
+    """Demonstrate approval/reject workflow with interrupt."""
+    print("=== Approval Workflow ===\n")
+
+    graph = _build_approval_graph()
 
     config = {"configurable": {"thread_id": "approval-123"}}
     initial_input = {"action_details": "Transfer $500", "status": "pending"}
@@ -119,17 +121,19 @@ def review_node(state: ReviewState):
     return {"generated_text": updated}
 
 
-def demo_review_and_edit():
-    """Demonstrate review-and-edit pattern with human input in the loop."""
-    print("=== Review and Edit ===\n")
-
+def _build_review_graph():
     builder = StateGraph(ReviewState)
     builder.add_node("review", review_node)
     builder.add_edge(START, "review")
     builder.add_edge("review", END)
+    return builder.compile(checkpointer=InMemorySaver())
 
-    checkpointer = InMemorySaver()
-    graph = builder.compile(checkpointer=checkpointer)
+
+def demo_review_and_edit():
+    """Demonstrate review-and-edit pattern with human input in the loop."""
+    print("=== Review and Edit ===\n")
+
+    graph = _build_review_graph()
 
     config = {"configurable": {"thread_id": "review-42"}}
     final = run_with_human_input(graph, {"generated_text": "Initial draft"}, config)
@@ -156,11 +160,8 @@ def node_b(state):
     return {"vals": [f"b:{answer}"]}
 
 
-def demo_multiple_interrupts():
-    """Resume multiple interrupts with human input for each (map by ID)."""
-    print("=== Multiple Interrupts ===\n")
-
-    graph = (
+def _build_multi_interrupt_graph():
+    return (
         StateGraph(MultiInterruptState)
         .add_node("a", node_a)
         .add_node("b", node_b)
@@ -171,12 +172,27 @@ def demo_multiple_interrupts():
         .compile(checkpointer=InMemorySaver())
     )
 
+
+def demo_multiple_interrupts():
+    """Resume multiple interrupts with human input for each (map by ID)."""
+    print("=== Multiple Interrupts ===\n")
+
+    graph = _build_multi_interrupt_graph()
+
     config = {"configurable": {"thread_id": "multi-1"}}
     result = run_with_human_input(graph, {"vals": []}, config)
     print("\nFinal state:", result)
 
 
 if __name__ == "__main__":
+    from utils.create_mermaid import build_and_save_mermaid
+
+    output_dir = Path(__file__).resolve().parent.parent / "mermaids"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    build_and_save_mermaid("03_interrupts_approval", _build_approval_graph(), output_dir)
+    build_and_save_mermaid("03_interrupts_review", _build_review_graph(), output_dir)
+    build_and_save_mermaid("03_interrupts_multi", _build_multi_interrupt_graph(), output_dir)
+
     demo_approval_workflow()
     demo_review_and_edit()
     demo_multiple_interrupts()

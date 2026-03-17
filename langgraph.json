@@ -1,0 +1,7 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "calculator": "./agentic_files/server_graph.py:graph"
+  },
+  "env": "./agentic_files/.env"
+}

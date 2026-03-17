@@ -16,7 +16,7 @@ from typing import Literal
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import InMemorySaver
 from typing_extensions import NotRequired, TypedDict
-
+from pathlib import Path
 
 # --- Multiple agent subgraphs pattern ---
 class HandoffState(TypedDict):
@@ -94,10 +94,7 @@ def route_initial(state: HandoffState) -> Literal["sales_agent", "support_agent"
     return state.get("active_agent") or "sales_agent"
 
 
-def demo_handoffs():
-    """Sales ↔ Support handoffs based on user intent."""
-    print("=== Multi-Agent Handoffs ===\n")
-
+def _build_handoffs_graph():
     builder = StateGraph(HandoffState)
     builder.add_node("sales_agent", sales_agent_node)
     builder.add_node("support_agent", support_agent_node)
@@ -109,8 +106,14 @@ def demo_handoffs():
     builder.add_conditional_edges(
         "support_agent", route_after_agent, ["sales_agent", "support_agent", END]
     )
+    return builder.compile(checkpointer=InMemorySaver())
 
-    graph = builder.compile(checkpointer=InMemorySaver())
+
+def demo_handoffs():
+    """Sales ↔ Support handoffs based on user intent."""
+    print("=== Multi-Agent Handoffs ===\n")
+
+    graph = _build_handoffs_graph()
 
     # Scenario 1: User asks support question first
     print("Scenario: User has login trouble (starts with sales)")
@@ -125,4 +128,10 @@ def demo_handoffs():
 
 
 if __name__ == "__main__":
+    from utils.create_mermaid import build_and_save_mermaid
+
+    output_dir = Path(__file__).resolve().parent.parent / "mermaids"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    build_and_save_mermaid("07_handoffs", _build_handoffs_graph(), output_dir)
+
     demo_handoffs()
