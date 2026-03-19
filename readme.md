@@ -31,16 +31,17 @@ For `01_quickstart.py`, set `ANTHROPIC_API_KEY` (or use another model via `init_
 ## Run
 
 ```bash
+# 01 requires OpenAI API KEY
+python 01_quickstart.py
+
 # All scripts except 01 work without API keys
+python 00_server_graph.py
 python 02_persistence.py
 python 03_interrupts.py
 python 04_durable_execution.py
 python 05_subgraphs.py
 python 06_multi_agent.py
 python 07_handoffs.py
-
-# 01 requires ANTHROPIC_API_KEY
-python 01_quickstart.py
 ```
 
 ## LangGraph Server
