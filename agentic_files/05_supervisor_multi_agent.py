@@ -66,14 +66,14 @@ def route_after_router(state: MultiAgentState) -> Literal["coding_agent", "math_
 
 def _build_router_graph():
     builder = StateGraph(MultiAgentState)
-    builder.add_node("router", router_node)
+    builder.add_node("supervisor", router_node)
     builder.add_node("coding_agent", coding_agent_node)
     builder.add_node("math_agent", math_agent_node)
     builder.add_node("general_agent", general_agent_node)
 
-    builder.add_edge(START, "router")
+    builder.add_edge(START, "supervisor")
     builder.add_conditional_edges(
-        "router",
+        "supervisor",
         route_after_router,
         ["coding_agent", "math_agent", "general_agent"],
     )
@@ -106,6 +106,6 @@ if __name__ == "__main__":
 
     output_dir = Path(__file__).resolve().parent.parent / "mermaids"
     output_dir.mkdir(parents=True, exist_ok=True)
-    build_and_save_mermaid("05_multi_agent", _build_router_graph(), output_dir)
+    build_and_save_mermaid("05_supervisor_multi_agent", _build_router_graph(), output_dir)
 
     demo_router_pattern()

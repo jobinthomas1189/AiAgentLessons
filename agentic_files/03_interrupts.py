@@ -83,4 +83,5 @@ if __name__ == "__main__":
     output_dir.mkdir(parents=True, exist_ok=True)
 
     build_and_save_mermaid("03_interrupts_approval", _build_approval_graph(), output_dir)
+    
     demo_approval_workflow()

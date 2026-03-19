@@ -6,7 +6,6 @@ Concepts:
 1. Call subgraph inside a node: Different state schemas, transform I/O
 2. Add subgraph as a node: Shared state keys, direct pass-through
 3. Subgraph persistence: per-invocation (default), per-thread, stateless
-4. Streaming with subgraphs=True
 """
 
 from typing_extensions import TypedDict
@@ -78,11 +77,12 @@ class SharedState(TypedDict):
     foo: str
     bar: str
 
-
+# sub graph changing final state of parent node
 def subgraph_shared_node_1(state: SharedState):
     return {"bar": "bar"}
 
 
+# sub graph changing final state of parent node
 def subgraph_shared_node_2(state: SharedState):
     return {"foo": state["foo"] + state["bar"]}
 
@@ -120,28 +120,6 @@ def demo_add_subgraph_as_node():
     print()
 
 
-# --- Stream with subgraphs ---
-def demo_stream_subgraphs():
-    """Stream updates including subgraph nodes."""
-    print("=== Stream with subgraphs=True (v2 stream format) ===\n")
-
-    graph = _build_call_subgraph_graph()
-
-    print("Stream chunks:")
-    for chunk in graph.stream(
-        {"foo": "foo"},
-        stream_mode="updates",
-        subgraphs=True,
-        version="v2",
-    ):
-        # v2: dict with type/ns/data; v1 subgraphs: (ns, data) tuple
-        if isinstance(chunk, dict) and chunk.get("type") == "updates":
-            print("  ns:", chunk["ns"], "data:", chunk["data"])
-        elif isinstance(chunk, (list, tuple)) and len(chunk) >= 2:
-            ns, data = chunk[0], chunk[1]
-            print("  ns:", ns, "data:", data)
-
-
 if __name__ == "__main__":
     from utils.create_mermaid import build_and_save_mermaid
 
@@ -152,4 +130,3 @@ if __name__ == "__main__":
 
     demo_call_subgraph_inside_node()
     demo_add_subgraph_as_node()
-    demo_stream_subgraphs()
