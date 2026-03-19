@@ -25,6 +25,32 @@ Then edit `agentic_files/.env` and set:
 ANTHROPIC_API_KEY=your_key_here
 ```
 
+## Environment variables (the `.env` file)
+
+LangGraph dev server loads environment variables from:
+
+- `agentic_files/.env` (configured in root `langgraph.json`)
+
+Create it from the example file:
+
+```bash
+cp agentic_files/.env.example agentic_files/.env
+```
+
+### Required
+
+- `ANTHROPIC_API_KEY`: required for this graph because it calls Anthropic Claude via `init_chat_model(...)`.
+
+### Optional (LangSmith tracing)
+
+If you want request/trace logging in LangSmith, set:
+
+```bash
+LANGSMITH_API_KEY=your_key_here
+LANGSMITH_TRACING=true
+LANGSMITH_PROJECT=AiAgentLessons
+```
+
 ## Run the server
 
 From `AiAgentLessons`:
