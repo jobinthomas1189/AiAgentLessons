@@ -3,7 +3,7 @@
     "./agentic_files"
   ],
   "graphs": {
-    "calculator": "./agentic_files/server_graph_registry.py:graph_01_quickstart"
+    "calculator": "./agentic_files/server_graph_registry.py:graph_03_interrupts"
   },
   "env": ".env"
 }

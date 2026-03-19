@@ -1,36 +1,35 @@
 """
-LangGraph Interrupts - Human-in-the-Loop
-Source: https://docs.langchain.com/oss/python/langgraph/interrupts
-
-Concepts:
-- interrupt(): Pause execution and wait for external input
-- Command(resume=...): Resume with the human's response
-- thread_id: Persistent pointer for checkpointing
-- Approval workflows, review-and-edit, validation patterns
+Simple LangGraph Interrupt Example - Approval Workflow
 """
 
+from pathlib import Path
 from typing import Literal, Optional, TypedDict
 
 from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.graph import StateGraph, START, END
+from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
-from pathlib import Path
+from utils.create_mermaid import build_and_save_mermaid
 
-# --- Approval Workflow ---
+
 class ApprovalState(TypedDict):
     action_details: str
     status: Optional[Literal["pending", "approved", "rejected"]]
 
 
-def approval_node(state: ApprovalState) -> Command:
-    """Pause for human approval, then route to proceed or cancel."""
-    decision = interrupt(
+def approval_node(state: ApprovalState):
+    """Pause and wait for a human yes/no answer."""
+    approved = interrupt(
         {
-            "question": "Approve this action?",
+            "question": "Approve this action? (yes/no)",
             "details": state["action_details"],
         }
     )
-    return Command(goto="proceed" if decision else "cancel")
+    return {"status": "approved" if approved else "rejected"}
+
+
+def route_after_approval(state: ApprovalState) -> str:
+    """Use conditional edges to choose the next node."""
+    return "proceed" if state["status"] == "approved" else "cancel"
 
 
 def proceed_node(state: ApprovalState):
@@ -41,158 +40,47 @@ def cancel_node(state: ApprovalState):
     return {"status": "rejected"}
 
 
-def get_human_resume(interrupt_payload) -> str | bool:
-    """Prompt user for input based on interrupt type. Returns value for Command(resume=...)."""
-    if isinstance(interrupt_payload, dict):
-        print(f"\n  {interrupt_payload.get('question', 'Input required')}")
-        if "details" in interrupt_payload:
-            print(f"  Details: {interrupt_payload['details']}")
-        if "content" in interrupt_payload:
-            print(f"  Current content: {interrupt_payload['content']}")
-        raw = input("  Your response: ").strip()
-        # Approval workflow expects True/False
-        if "approve" in str(interrupt_payload.get("question", "")).lower():
-            return raw.lower() in ("yes", "y", "true", "1")
-        return raw if raw else interrupt_payload.get("content", "")
-    print(f"\n  {interrupt_payload}")
-    return input("  Your response: ").strip()
-
-
-def run_with_human_input(graph, initial_input: dict, config: dict):
-    """
-    Run graph in a loop: on interrupt, prompt for human input and resume.
-    Continues until graph completes (no more interrupts).
-    """
-    result = graph.invoke(initial_input, config)
-    while "__interrupt__" in result and result["__interrupt__"]:
-        interrupts = result["__interrupt__"]
-        if len(interrupts) == 1:
-            payload = interrupts[0].value
-            resume_val = get_human_resume(payload)
-            result = graph.invoke(Command(resume=resume_val), config)
-        else:
-            resume_map = {}
-            for i in interrupts:
-                print(f"\n  Interrupt: {i.value}")
-                resume_map[i.id] = input(f"  Response for {i.value}: ").strip()
-            result = graph.invoke(Command(resume=resume_map), config)
-    return result
-
-
 def _build_approval_graph():
     builder = StateGraph(ApprovalState)
     builder.add_node("approval", approval_node)
     builder.add_node("proceed", proceed_node)
     builder.add_node("cancel", cancel_node)
     builder.add_edge(START, "approval")
+    builder.add_conditional_edges(
+        "approval",
+        route_after_approval,
+        {"proceed": "proceed", "cancel": "cancel"},
+    )
     builder.add_edge("proceed", END)
     builder.add_edge("cancel", END)
     return builder.compile(checkpointer=InMemorySaver())
 
 
 def demo_approval_workflow():
-    """Demonstrate approval/reject workflow with interrupt."""
-    print("=== Approval Workflow ===\n")
+    print("=== Approval Workflow ===")
 
     graph = _build_approval_graph()
-
     config = {"configurable": {"thread_id": "approval-123"}}
-    initial_input = {"action_details": "Transfer $500", "status": "pending"}
 
-    # Run with human input loop - prompts when interrupt fires
-    result = run_with_human_input(graph, initial_input, config)
-    print("\nFinal status:", result["status"])
-    print()
-
-
-# --- Review and Edit ---
-class ReviewState(TypedDict):
-    generated_text: str
-
-
-def review_node(state: ReviewState):
-    """Pause for human to review and edit content."""
-    updated = interrupt(
-        {
-            "instruction": "Review and edit this content",
-            "content": state["generated_text"],
-        }
+    result = graph.invoke(
+        {"action_details": "Transfer $500", "status": "pending"},
+        config,
     )
-    return {"generated_text": updated}
+    payload = result["__interrupt__"][0].value
 
+    print(f"\n{payload['question']}")
+    print(f"Details: {payload['details']}")
+    human_answer = input("Your response: ").strip().lower()
+    approved = human_answer in {"y", "yes", "true", "1"}
 
-def _build_review_graph():
-    builder = StateGraph(ReviewState)
-    builder.add_node("review", review_node)
-    builder.add_edge(START, "review")
-    builder.add_edge("review", END)
-    return builder.compile(checkpointer=InMemorySaver())
-
-
-def demo_review_and_edit():
-    """Demonstrate review-and-edit pattern with human input in the loop."""
-    print("=== Review and Edit ===\n")
-
-    graph = _build_review_graph()
-
-    config = {"configurable": {"thread_id": "review-42"}}
-    final = run_with_human_input(graph, {"generated_text": "Initial draft"}, config)
-    print("\nFinal text:", final["generated_text"])
-    print()
-
-
-# --- Multiple Interrupts (parallel branches) ---
-from typing import Annotated
-import operator
-
-
-class MultiInterruptState(TypedDict):
-    vals: Annotated[list[str], operator.add]
-
-
-def node_a(state):
-    answer = interrupt("question_a")
-    return {"vals": [f"a:{answer}"]}
-
-
-def node_b(state):
-    answer = interrupt("question_b")
-    return {"vals": [f"b:{answer}"]}
-
-
-def _build_multi_interrupt_graph():
-    return (
-        StateGraph(MultiInterruptState)
-        .add_node("a", node_a)
-        .add_node("b", node_b)
-        .add_edge(START, "a")
-        .add_edge(START, "b")
-        .add_edge("a", END)
-        .add_edge("b", END)
-        .compile(checkpointer=InMemorySaver())
-    )
-
-
-def demo_multiple_interrupts():
-    """Resume multiple interrupts with human input for each (map by ID)."""
-    print("=== Multiple Interrupts ===\n")
-
-    graph = _build_multi_interrupt_graph()
-
-    config = {"configurable": {"thread_id": "multi-1"}}
-    result = run_with_human_input(graph, {"vals": []}, config)
-    print("\nFinal state:", result)
+    final = graph.invoke(Command(resume=approved), config)
+    print("\nFinal status:", final["status"])
 
 
 if __name__ == "__main__":
-    from utils.create_mermaid import build_and_save_mermaid
 
     output_dir = Path(__file__).resolve().parent.parent / "mermaids"
     output_dir.mkdir(parents=True, exist_ok=True)
-    build_and_save_mermaid("03_interrupts_approval", _build_approval_graph(), output_dir)
-    build_and_save_mermaid("03_interrupts_review", _build_review_graph(), output_dir)
-    build_and_save_mermaid("03_interrupts_multi", _build_multi_interrupt_graph(), output_dir)
 
+    build_and_save_mermaid("03_interrupts_approval", _build_approval_graph(), output_dir)
     demo_approval_workflow()
-    demo_review_and_edit()
-    demo_multiple_interrupts()

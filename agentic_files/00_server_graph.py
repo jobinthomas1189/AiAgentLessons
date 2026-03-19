@@ -42,13 +42,10 @@ tools_by_name = {t.name: t for t in tools}
 model = init_chat_model("gpt-5.4", temperature=0)
 model_with_tools = model.bind_tools(tools)
 
-
-# {"messages": [{"role": "system", "content": "You are a helpful assistant tasked with performing arithmetic on a set of inputs."}, {"role": "user", "content": "What is 3 + 4?"}]}
-
+{"messages": [{"role": "system", "content": "You are a helpful assistant tasked with performing arithmetic on a set of inputs."}, {"role": "user", "content": "What is (3 + 4) / 5 - 6 * 7?"}]}
 
 class MessagesState(TypedDict):
     messages: Annotated[list[AnyMessage], operator.add]
-
 
 def llm_call(state: dict):
     return {
@@ -63,7 +60,6 @@ def llm_call(state: dict):
             )
         ]
     }
-
 
 def tool_node(state: dict):
     result = []
