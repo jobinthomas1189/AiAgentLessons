@@ -1,7 +1,9 @@
 {
-  "dependencies": ["./agentic_files"],
+  "dependencies": [
+    "./agentic_files"
+  ],
   "graphs": {
-    "calculator": "./agentic_files/server_graph.py:graph"
+    "calculator": "./agentic_files/server_graph_registry.py:graph_07_handoffs"
   },
   "env": ".env"
 }

@@ -1,7 +1,0 @@
-{
-  "dependencies": ["."],
-  "graphs": {
-    "calculator": "./server_graph.py:graph"
-  },
-  "env": ".env"
-}

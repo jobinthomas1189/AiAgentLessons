@@ -2,16 +2,16 @@
 
 Python scripts demonstrating LangChain/LangGraph concepts, based on the official documentation.
 
-## Explain Aux links and materials
 
-## Explain the 3 directories
-## Setup
-
+Setup
+In working directory:
 ```bash
 python3.12 -m venv aienv
 source aienv/bin/activate
 pip install -r agentic_files/requirements.txt
-python {agentic_file}
+chmod +x run_langgraph_server.sh
+# Set langgraph.json graph before running any lesson scripts:
+./run_langgraph_server.sh 0 --set-only
 ```
 
 For `01_quickstart.py`, set `ANTHROPIC_API_KEY` (or use another model via `init_chat_model`).
@@ -52,7 +52,8 @@ Detailed setup guide: [`LANGGRAPH_SERVER_SETUP.md`](./LANGGRAPH_SERVER_SETUP.md)
 ```bash
 cp agentic_files/.env.example agentic_files/.env   # Edit and add ANTHROPIC_API_KEY (required)
 pip install -r agentic_files/requirements.txt
-langgraph dev
+# Select graph 0-7, update langgraph.json, then start LangGraph dev:
+./run_langgraph_server.sh 0
 ```
 
 - **API**: http://localhost:2024
