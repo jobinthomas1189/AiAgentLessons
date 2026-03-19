@@ -1,31 +1,9 @@
-# 05_multi_agent.py
+# 05_supervisor_multi_agent.py
 
 ## Overview
 
-LangChain Multi-Agent Patterns — Router pattern. Classify input and route to specialized agents (coding, math, general).
-
-**Source:** [LangChain Multi-Agent](https://docs.langchain.com/oss/python/langchain/multi-agent)
-
-## Purpose
-
-Demonstrates the **Router** multi-agent pattern:
-
-1. **Router** — Classify user input
-2. **Specialized agents** — `coding_agent`, `math_agent`, `general_agent`
-3. **Conditional routing** — Route to one agent based on classification
-
-## Other Patterns (Overview)
-
-- **Subagents** — Main agent coordinates subagents as tools
-- **Handoffs** — Tool calls update state → routing changes (see `07_handoffs.py`)
-- **Skills** — Load specialized prompts/knowledge on-demand
-- **Custom workflow** — LangGraph with deterministic + agentic nodes
-
-## Graph Flow
-
-```
-START → router → (coding_agent | math_agent | general_agent) → END
-```
+Router-style multi-agent example using a supervisor node that sends input to one specialized agent.
+Despite the filename using "supervisor", the implementation is a simple keyword router.
 
 ## State
 
@@ -37,29 +15,37 @@ class MultiAgentState(TypedDict):
 
 ## Nodes
 
-| Node | Role |
-|------|------|
-| `router_node` | Keyword-based routing (production: use LLM) |
-| `coding_agent_node` | Handles Python/code questions |
-| `math_agent_node` | Handles math/calculation questions |
-| `general_agent_node` | General-purpose fallback |
+- `supervisor` (`router_node`): classifies latest user message
+- `coding_agent`: returns coding-focused response text
+- `math_agent`: returns calculation-focused response text
+- `general_agent`: fallback response
 
-## Routing Logic
+## Routing Rules
 
-- `"python"` or `"code"` → `coding_agent`
-- `"math"` or `"calculate"` → `math_agent`
-- Default → `general_agent`
+- Contains `"python"` or `"code"` -> `coding_agent`
+- Contains `"math"` or `"calculate"` -> `math_agent`
+- Otherwise -> `general_agent`
 
-## Demo
+## Graph Flow
 
-`demo_router_pattern()` runs three test queries:
+```text
+START -> supervisor -> (coding_agent | math_agent | general_agent) -> END
+```
 
-- "Help me with Python code" → coding_agent
-- "Calculate 2+2" → math_agent
-- "Hello!" → general_agent
+## Demo Behavior
+
+`demo_router_pattern()` invokes the graph with three sample queries and prints:
+
+- original query
+- selected route (`routed_to`)
+- final assistant message snippet
+
+All invocations use the same thread id (`router-demo`) with `InMemorySaver`.
 
 ## Usage
 
 ```bash
-python 05_multi_agent.py
+python 05_supervisor_multi_agent.py
 ```
+
+This script also exports a Mermaid diagram named `05_supervisor_multi_agent`.

@@ -1,72 +1,66 @@
-# 06_subgraphs.py
+# 06_subgraphs_multi_agent.py
 
 ## Overview
 
-LangGraph Subgraphs — Composing graphs. Use subgraphs as reusable building blocks inside parent graphs.
+Subgraph composition examples in two concrete styles:
 
-**Source:** [LangGraph Use Subgraphs](https://docs.langchain.com/oss/python/langgraph/use-subgraphs)
+1. invoke a subgraph from inside a parent node (different schemas)
+2. attach a compiled subgraph directly as a parent node (shared schema)
 
-## Purpose
+## Pattern 1: Subgraph Called Inside Node
 
-- **Pattern 1:** Call subgraph inside a node (different state schemas, transform I/O)
-- **Pattern 2:** Add subgraph as a node (shared state keys, direct pass-through)
-- **Streaming:** Use `subgraphs=True` with `stream_mode="updates"` (v2 format)
+### Schemas
 
-## Pattern 1: Call Subgraph Inside Node
+- Parent: `ParentState` with `foo`
+- Subgraph: `SubgraphState` with `bar`, `baz`
 
-### Different State Schemas
+### Behavior
 
-- **Parent state:** `foo: str`
-- **Subgraph state:** `bar: str`, `baz: str`
+- Parent `node_1` prefixes `foo` with `"hi! "`
+- `call_subgraph` maps `foo -> bar`, invokes subgraph, maps output back to `foo`
+- Subgraph internal flow:
+  - `subgraph_node_1` sets `baz = "baz"`
+  - `subgraph_node_2` sets `bar = bar + baz`
 
-### Flow
+### Parent Flow
 
+```text
+START -> node_1 -> node_2(call_subgraph) -> END
 ```
-node_1 (parent) → call_subgraph (wrapper) → END
-```
 
-- `call_subgraph` transforms: `parent.foo` → subgraph input `{bar, baz}`
-- Subgraph runs: `subgraph_node_1` → `subgraph_node_2`
-- Output transformed back: `subgraph.bar` → `parent.foo`
+## Pattern 2: Subgraph Added As Node
 
-### Code
+### Shared Schema
+
+Both parent and subgraph use:
 
 ```python
-def call_subgraph(state: ParentState):
-    subgraph_input = {"bar": state["foo"], "baz": ""}
-    subgraph_output = subgraph.invoke(subgraph_input)
-    return {"foo": subgraph_output["bar"]}
+class SharedState(TypedDict):
+    foo: str
+    bar: str
 ```
 
-## Pattern 2: Add Subgraph as Node
+### Behavior
 
-### Shared State
+- Parent `node_1` prefixes `foo`
+- `node_2` is the compiled subgraph itself
+- Shared keys pass through directly without wrapper mapping
 
-- **SharedState:** `foo`, `bar` — both parent and subgraph use same keys
+### Parent Flow
 
-### Flow
-
+```text
+START -> node_1 -> node_2(subgraph_shared) -> END
 ```
-node_1 (parent) → subgraph_shared (as node) → END
-```
 
-- Subgraph is added directly: `builder.add_node("node_2", subgraph_shared)`
-- No wrapper; state passes through automatically
+## Demo Functions
 
-## Demos
-
-- **`demo_call_subgraph_inside_node()`** — Pattern 1 with state transformation
-- **`demo_add_subgraph_as_node()`** — Pattern 2 with shared state
-- **`demo_stream_subgraphs()`** — Streaming with `subgraphs=True`, v2 format
-
-## Subgraph Persistence Options
-
-- **Per-invocation** (default) — Fresh state each call
-- **Per-thread** — Persist across invocations in same thread
-- **Stateless** — No persistence
+- `demo_call_subgraph_inside_node()`
+- `demo_add_subgraph_as_node()`
 
 ## Usage
 
 ```bash
-python 06_subgraphs.py
+python 06_subgraphs_multi_agent.py
 ```
+
+Running the file exports Mermaid diagrams for both parent graph variants.

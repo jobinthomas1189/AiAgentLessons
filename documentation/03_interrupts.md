@@ -2,56 +2,41 @@
 
 ## Overview
 
-LangGraph Interrupts — Human-in-the-loop workflows. Pause execution, wait for external input, then resume with `Command(resume=...)`.
+Human-in-the-loop approval workflow using `interrupt()` and `Command(resume=...)`.
+This script contains a single concrete pattern: pause for approval, then route to proceed/cancel.
 
-**Source:** [LangGraph Interrupts](https://docs.langchain.com/oss/python/langgraph/interrupts)
+## State
 
-## Purpose
+```python
+class ApprovalState(TypedDict):
+    action_details: str
+    status: Optional[Literal["pending", "approved", "rejected"]]
+```
 
-- Use `interrupt()` to pause and wait for human input
-- Use `Command(resume=...)` to resume with the human's response
-- Demonstrate approval workflows, review-and-edit, and multiple parallel interrupts
+## Flow
 
-## Key Concepts
+```text
+START -> approval -> (proceed or cancel) -> END
+```
 
-### `interrupt(payload)`
+- `approval_node` calls `interrupt(...)` with question + details payload
+- Human answer is resumed as boolean
+- `route_after_approval` chooses:
+  - `proceed` when approved
+  - `cancel` when rejected
 
-Pauses the graph and returns control. The graph returns `{"__interrupt__": [...]}`. Resume with `graph.invoke(Command(resume=value), config)`.
+## Interrupt/Resume Pattern In This File
 
-### `Command(goto=...)` or `Command(resume=...)`
+1. Invoke graph with an initial state and thread config
+2. Read interrupt payload from `result["__interrupt__"][0].value`
+3. Collect console input (`yes/no`)
+4. Resume using `graph.invoke(Command(resume=approved), config)`
+5. Print final status
 
-- `goto` — Route to a specific node
-- `resume` — Value passed back to the node that called `interrupt()`
+## Key Functions
 
-## Demos
-
-### 1. Approval Workflow
-
-- **State:** `action_details`, `status`
-- **Flow:** `approval` → (interrupt) → `proceed` or `cancel`
-- **Interrupt payload:** `{"question": "Approve this action?", "details": ...}`
-- **Resume:** `True` → proceed, `False` → cancel
-
-### 2. Review and Edit
-
-- **State:** `generated_text`
-- **Flow:** `review` (interrupt) → human edits content → resume with updated text
-- **Interrupt payload:** `{"instruction": "Review and edit", "content": ...}`
-
-### 3. Multiple Interrupts (Parallel Branches)
-
-- **State:** `vals` (list, reducer)
-- **Flow:** Parallel nodes `a` and `b` both call `interrupt()` with different questions
-- **Resume:** Map by interrupt ID when multiple interrupts exist
-
-## Helper: `run_with_human_input()`
-
-Runs the graph in a loop: on `__interrupt__`, prompts the user for input, then invokes `Command(resume=...)` until the graph completes.
-
-## Requirements
-
-- `InMemorySaver` (checkpointer) — required for interrupts
-- `thread_id` in config — persistent pointer for checkpointing
+- `_build_approval_graph()`: compiles graph with `InMemorySaver`
+- `demo_approval_workflow()`: runs an interactive terminal demo
 
 ## Usage
 
@@ -59,4 +44,4 @@ Runs the graph in a loop: on `__interrupt__`, prompts the user for input, then i
 python 03_interrupts.py
 ```
 
-Prompts for human input when interrupts fire.
+The script prompts for approval and then prints the final routed status.

@@ -1,14 +1,25 @@
 # LangGraph Server Setup
 
-This guide explains how to run the local LangGraph server for the calculator graph in `agentic_files/server_graph.py`.
+This guide explains how to run the local LangGraph dev server from the project root.
+Current server config is in `langgraph.json`.
+
+## Current Config (Important)
+
+The root `langgraph.json` currently contains:
+
+- `graphs.calculator = ./agentic_files/server_graph_registry.py:graph_00_server_graph`
+- `env = .env`
+- `dependencies = ["./agentic_files"]`
+
+So by default, the served graph is lesson `00` through the registry export.
 
 ## Prerequisites
 
 - Python 3.12+
-- Virtual environment created in project root
+- Virtual environment in project root
 - Dependencies installed from `agentic_files/requirements.txt`
 
-## Quick setup
+## Quick Setup
 
 From `AiAgentLessons`:
 
@@ -16,42 +27,25 @@ From `AiAgentLessons`:
 python3.12 -m venv aienv
 source aienv/bin/activate
 pip install -r agentic_files/requirements.txt
-cp agentic_files/.env.example agentic_files/.env
+cp agentic_files/.env.example .env
 ```
 
-Then edit `agentic_files/.env` and set:
+Then edit root `.env` and set keys as needed.
+
+## Environment Variables
+
+The dev server loads env vars from root `.env` (not `agentic_files/.env`).
+
+Example values from `agentic_files/.env.example`:
 
 ```bash
-ANTHROPIC_API_KEY=your_key_here
-```
-
-## Environment variables (the `.env` file)
-
-LangGraph dev server loads environment variables from:
-
-- `agentic_files/.env` (configured in root `langgraph.json`)
-
-Create it from the example file:
-
-```bash
-cp agentic_files/.env.example agentic_files/.env
-```
-
-### Required
-
-- `ANTHROPIC_API_KEY`: required for this graph because it calls Anthropic Claude via `init_chat_model(...)`.
-
-### Optional (LangSmith tracing)
-
-If you want request/trace logging in LangSmith, set:
-
-```bash
-LANGSMITH_API_KEY=your_key_here
+OPENAI_API_KEY=your_openai_key
+LANGSMITH_API_KEY=your_langsmith_key
 LANGSMITH_TRACING=true
 LANGSMITH_PROJECT=AiAgentLessons
 ```
 
-## Run the server
+## Run The Server
 
 From `AiAgentLessons`:
 
@@ -59,22 +53,25 @@ From `AiAgentLessons`:
 langgraph dev
 ```
 
+Or use the helper script to choose graph index `0-7` and update `langgraph.json` automatically:
+
+```bash
+./run_langgraph_server.sh 0
+```
+
+Set config without starting server:
+
+```bash
+./run_langgraph_server.sh 0 --set-only
+```
+
 ## URLs
 
 - API: `http://localhost:2024`
 - Docs: `http://localhost:2024/docs`
-- Studio: opens automatically in browser
+- Studio: URL appears in terminal when server starts
 
-## Why this now works from project root
-
-The project includes a root-level `langgraph.json` that points to:
-
-- Graph: `./agentic_files/server_graph.py:graph`
-- Env file: `./agentic_files/.env`
-
-So you can run `langgraph dev` directly from `AiAgentLessons` without changing directories.
-
-## Common issue
+## Common Issues
 
 If you see:
 
@@ -82,10 +79,7 @@ If you see:
 Error: Invalid value for '--config': Path 'langgraph.json' does not exist.
 ```
 
-you are in a directory that does not contain `langgraph.json`. Fix by:
-
-- running the command from `AiAgentLessons`, or
-- passing an explicit config path:
+Run from `AiAgentLessons`, or pass explicit config path:
 
 ```bash
 langgraph dev --config /full/path/to/AiAgentLessons/langgraph.json
@@ -97,7 +91,7 @@ If you see:
 Error: Required package 'langgraph-api' is not installed.
 ```
 
-install the in-memory dev dependencies:
+Install CLI in-memory extras:
 
 ```bash
 source aienv/bin/activate

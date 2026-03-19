@@ -2,24 +2,24 @@
 
 ## Overview
 
-LangGraph Durable Execution — Resumable workflows. Save progress at key points and resume after interruptions (e.g., crashes, restarts).
+Durable execution demonstration focused on two things:
 
-**Source:** [LangGraph Durable Execution](https://docs.langchain.com/oss/python/langgraph/durable-execution)
+- checkpoint-backed graph recovery with `thread_id`
+- idempotent side effects using `@task`
 
-## Purpose
+## Main Pieces
 
-- **Durable execution:** Persist state so workflows can resume
-- **`@task`:** Wrap side effects so they are not repeated on resume (memoization)
-- **Determinism:** Non-deterministic code should live in tasks/nodes
-- **Durability modes:** `sync`, `async`, `exit`
+### 1) Basic durable graph
 
-## Key Concepts
+- Internal state: `step`, `count`
+- Flow: `START -> node_a -> node_b -> END`
+- Compiled with `InMemorySaver`
+- Demo shows:
+  - first invocation result
+  - checkpoint retrieval via `graph.get_state(config)`
+  - durability mode explanations (`sync`, `async`, `exit`)
 
-### Without `@task`
-
-Side effects (e.g., API calls) run every time a node executes — including on resume. Risk of duplicate charges or duplicate actions.
-
-### With `@task`
+### 2) Task-wrapped side effects
 
 ```python
 @task
@@ -27,39 +27,24 @@ def _make_request(url: str):
     return f"[API result for {url}]"
 ```
 
-- Result is cached per run
-- On resume, the task returns the cached result instead of re-executing
+- `call_api_with_task` executes requests through task futures
+- `.result()` resolves each task output
+- Intended to avoid repeating side effects on resume
 
-### Durability Modes
+## Included State Types
 
-| Mode | Behavior |
-|------|----------|
-| `sync` | Persist before each step (most durable) |
-| `async` | Persist asynchronously (faster, small crash risk) |
-| `exit` | Persist only on graph exit (fastest, no mid-run recovery) |
+- `StateBasic`: single URL example without task wrapping
+- `StateWithTask`: list-of-URLs example with task wrapping
 
-## Demos
+## Demo Functions
 
-### `demo_durable_execution()`
-
-- Simple graph: `node_a` → `node_b`
-- Uses `thread_id` for checkpointing
-- Shows first run result and checkpoint state
-- Explains durability modes
-
-### `demo_task_wrapping()`
-
-- Graph with `call_api_with_task` node
-- Wraps API calls in `@task` for idempotency
-- Invokes with multiple URLs; results are memoized
-
-## Requirements
-
-- `InMemorySaver` (checkpointer)
-- `thread_id` in config (required for checkpointing)
+- `demo_durable_execution()`: checkpoint behavior and durability mode notes
+- `demo_task_wrapping()`: task-based request execution demo
 
 ## Usage
 
 ```bash
 python 04_durable_execution.py
 ```
+
+Running the file also exports Mermaid diagrams for both compiled graphs.

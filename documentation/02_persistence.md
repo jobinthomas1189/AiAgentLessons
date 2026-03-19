@@ -2,64 +2,52 @@
 
 ## Overview
 
-LangGraph Persistence — Checkpointing and state management. Covers threads, checkpoints, `get_state()`, `get_state_history()`, and `update_state()`.
+Persistence walkthrough for LangGraph checkpointing using `InMemorySaver`.
+The script demonstrates how thread-scoped state snapshots are created, inspected, filtered, and manually updated.
 
-**Source:** [LangGraph Persistence](https://docs.langchain.com/oss/python/langgraph/persistence)
-
-## Purpose
-
-- Explain **threads** (unique IDs for checkpoint storage)
-- Show **checkpoints** (state snapshots at each super-step)
-- Demonstrate `get_state()`, `get_state_history()`, and `update_state()`
-- Use `InMemorySaver` for development
-
-## Key Concepts
-
-### State
+## Core State and Graph
 
 ```python
 class State(TypedDict):
     foo: str
-    bar: Annotated[list[str], add]  # Reducer: append
+    bar: Annotated[list[str], add]
 ```
 
-### Graph Flow
+- Reducer `add` appends values into `bar` across node updates
+- Main flow: `START -> node_a -> node_b -> END`
+- Compiled with `checkpointer=InMemorySaver()`
 
-```
-START → node_a → node_b → END
-```
-
-- `node_a`: sets `foo="a"`, `bar=["a"]`
-- `node_b`: sets `foo="b"`, `bar=["b"]`
-
-## Demo Functions
+## What Each Demo Shows
 
 ### `demo_checkpoints()`
 
-- Runs graph with `thread_id: "1"`
-- Shows `get_state(config)` — latest snapshot (values, next, metadata)
-- Shows `get_state_history(config)` — chronological history of checkpoints
+- Invokes graph with `thread_id="1"`
+- Reads latest snapshot with `graph.get_state(config)`
+- Prints key metadata (`values`, `next`, `step`)
+- Iterates `graph.get_state_history(config)` to inspect recent checkpoints
 
 ### `demo_update_state()`
 
-- Runs graph, then calls `update_state(config, {...})`
-- Demonstrates manual state override (creates new checkpoint)
+- Runs a smaller one-node graph
+- Calls `graph.update_state(config, {...})`
+- Shows manual updates create a new checkpoint rather than mutating history
 
 ### `demo_filter_history()`
 
-- Filters history by `next == ("node_b",)` or `metadata.step == 2`
-- Shows querying specific checkpoints
+- Loads history list from one thread
+- Finds targeted checkpoints with:
+  - `next == ("node_b",)`
+  - `metadata["step"] == 2`
 
-## Key APIs
+## Helper Functions
 
-| API | Purpose |
-|-----|---------|
-| `graph.get_state(config)` | Latest state snapshot |
-| `graph.get_state_history(config)` | Iterator over all checkpoints |
-| `graph.update_state(config, values)` | Manually update state (new checkpoint) |
+- `_build_persistence_graph()`: returns compiled `node_a -> node_b` graph
+- `get_graphs_for_mermaid()`: provides named graph tuple for diagram export
 
 ## Usage
 
 ```bash
 python 02_persistence.py
 ```
+
+Running the file exports Mermaid output and executes all three persistence demos.

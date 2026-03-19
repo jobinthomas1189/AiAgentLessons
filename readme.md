@@ -28,6 +28,10 @@ For `01_quickstart.py`, set `ANTHROPIC_API_KEY` (or use another model via `init_
 | `06_multi_agent.py` | Router-style multi-agent pattern | [multi-agent](https://docs.langchain.com/oss/python/langchain/multi-agent) |
 | `07_handoffs.py` | Agent handoffs via state-driven routing (sales ↔ support) | [handoffs](https://docs.langchain.com/oss/python/langchain/multi-agent/handoffs) |
 
+## Lesson Mapping
+
+For a detailed explanation of why each demo script is the "right" lesson for its corresponding LangGraph concept, see the [**Lesson Mapping Guide**](./LESSON_MAPPING.md).
+
 ## Run
 
 ```bash

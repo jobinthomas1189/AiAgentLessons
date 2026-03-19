@@ -1,62 +1,63 @@
 # create_mermaid.py
 
-**Location:** `utils/create_mermaid.py`
+**Location:** `agentic_files/utils/create_mermaid.py`
 
 ## Overview
 
-Generates Mermaid diagram images for each LangGraph lesson file. Produces `.png` files in the `utils` directory for documentation and visualization.
+Utility helpers for turning compiled LangGraph objects into Mermaid text and PNG files.
+This module is mainly imported by lesson scripts, which call `build_and_save_mermaid(...)` in their `__main__` blocks.
 
-## Purpose
+## What It Actually Does
 
-- Extract Mermaid diagram strings from compiled LangGraphs
-- Render graphs as PNG images via the Mermaid.INK API
-- Support all lesson scripts: 01_quickstart through 07_handoffs
+- Extracts Mermaid flowchart source from a compiled graph
+- Saves Mermaid-rendered PNG files through LangGraph's Mermaid.INK-backed rendering
+- Provides a reusable helper used by lesson scripts
 
 ## Key Functions
 
 ### `get_mermaid_for_graph(graph) -> str`
 
-Extracts the Mermaid flowchart string from a compiled LangGraph using `graph.get_graph().draw_mermaid()`.
+Calls:
 
-### `save_mermaid_png(graph, output_path) -> bool`
+```python
+graph.get_graph().draw_mermaid()
+```
 
-Saves the graph as a PNG image. Uses Mermaid.INK API (requires network access). Returns `True` on success.
+If drawing fails, it returns a Mermaid-formatted error diagram string.
 
-### `build_and_save_mermaid(name, graph, output_dir, print_mermaid, save_png) -> tuple[str, bool]`
+### `save_mermaid_png(graph, output_path: Path) -> bool`
 
-Convenience function that generates Mermaid, optionally saves PNG, and optionally prints the Mermaid string.
+Calls:
 
-## Graphs Generated
+```python
+graph.get_graph().draw_mermaid_png(max_retries=3, retry_delay=2)
+```
 
-| Output File | Description |
-|-------------|-------------|
-| `01_quickstart.png` | Calculator agent (LLM + tool loop) |
-| `02_persistence.png` | Simple node_a → node_b flow |
-| `03_interrupts_approval.png` | Approval workflow with interrupt |
-| `03_interrupts_review.png` | Review-and-edit flow |
-| `03_interrupts_multi.png` | Parallel branches with interrupts |
-| `04_durable_execution.png` | node_a → node_b with checkpointing |
-| `05_multi_agent.png` | Router → coding/math/general agents |
-| `06_subgraphs.png` | Parent graph with subgraph node |
-| `07_handoffs.png` | Sales ↔ Support handoff flow |
+and writes bytes to `output_path`.
+Returns `True` on success, `False` on failure.
 
-## Usage
+### `build_and_save_mermaid(name, graph, output_dir, print_mermaid=False, save_png=True) -> tuple[str, bool]`
 
-```bash
-# From agentic_files directory
-python utils/create_mermaid.py
+- Builds Mermaid text
+- Saves `<name>.png` under `output_dir` when `save_png=True`
+- Optionally prints Mermaid text
+- Returns `(mermaid_text, png_saved_ok)`
 
-# Or from utils directory
-python create_mermaid.py
+## About `main()`
+
+`main()` currently prepares imports/output directory scaffolding but does not build lesson graphs or emit files by itself.
+Practical usage is through imports from lesson files (for example `01_quickstart.py`, `02_persistence.py`, etc.).
+
+## Usage Pattern
+
+From lesson scripts:
+
+```python
+from utils.create_mermaid import build_and_save_mermaid
+build_and_save_mermaid("graph_name", compiled_graph, output_dir)
 ```
 
 ## Requirements
 
-- **Network access** — PNG generation uses Mermaid.INK API
-- LangGraph and related dependencies installed
-- All lesson modules import successfully
-
-## Output
-
-- PNG files written to `utils/` directory
-- Summary printed: `Saved X/Y graphs to <path>`
+- LangGraph installed
+- Network access for PNG rendering (Mermaid.INK path used by `draw_mermaid_png`)

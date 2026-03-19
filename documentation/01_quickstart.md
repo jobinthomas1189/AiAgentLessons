@@ -2,47 +2,56 @@
 
 ## Overview
 
-LangGraph Quickstart — Calculator Agent. Demonstrates two ways to build an agent: **Graph API** and **Functional API**.
+Quickstart calculator agent showing the same behavior implemented with:
 
-**Source:** [LangGraph Quickstart](https://docs.langchain.com/oss/python/langgraph/quickstart)
+- Graph API (`StateGraph`)
+- Functional API (`@entrypoint` + `@task`)
 
-## Purpose
+## What The Script Contains
 
-- Introduce LangGraph basics with a simple arithmetic calculator agent
-- Compare **Graph API** (nodes + edges) vs **Functional API** (control flow with `@task` and `@entrypoint`)
+- Tool definitions: `add`, `multiply`, `divide`
+- Model setup with tool binding (`claude-sonnet-4-6`, temperature `0`)
+- Graph API implementation with explicit nodes and edges
+- Functional API implementation with loop-based control flow
+- Mermaid export for the Graph API workflow
 
-## Key Concepts
+## Graph API Details
 
-### Graph API
+### State
 
-1. **Tools** — `add`, `multiply`, `divide` (LangChain `@tool`)
-2. **State** — `MessagesState` with `messages` and `llm_calls`
-3. **Nodes** — `llm_call` (LLM decides tool usage), `tool_node` (executes tools)
-4. **Edges** — Conditional: `llm_call` → `tool_node` or `END`; `tool_node` → `llm_call`
-
-### Functional API
-
-- Uses `@task` for async/cached steps (`call_llm`, `call_tool`)
-- Uses `@entrypoint()` for the main agent function
-- Control flow: `call_llm` → loop over tool calls → `call_tool` → `call_llm` until done
-
-## Flow (Graph API)
-
+```python
+class MessagesState(TypedDict):
+    messages: Annotated[list[AnyMessage], operator.add]
+    llm_calls: int
 ```
-START → llm_call → (tool_node or END)
-         ↑              |
-         └──────────────┘
+
+### Nodes
+
+- `llm_call`: sends system prompt + history to model, increments `llm_calls`
+- `tool_node`: executes each tool call and returns `ToolMessage` responses
+- `should_continue`: routes to tools if present, otherwise ends
+
+### Flow
+
+```text
+START -> llm_call -> (tool_node or END)
+          ^              |
+          |______________|
 ```
+
+## Functional API Details
+
+- `call_llm` task: requests next model step
+- `call_tool` task: runs one tool call
+- `functional_agent` entrypoint:
+  - call model
+  - if tool calls exist, execute tools and append results
+  - repeat until no tool calls remain
 
 ## Demo Functions
 
-- **`run_graph_api_example()`** — Invokes Graph API agent with "Add 3 and 4."
-- **`run_functional_api_example()`** — Streams Functional API agent output
-
-## Requirements
-
-- `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
-- `init_chat_model("claude-sonnet-4-6", temperature=0)`
+- `run_graph_api_example()`: one-shot invoke, then pretty-prints message trace
+- `run_functional_api_example()`: streams incremental updates
 
 ## Usage
 
@@ -50,4 +59,4 @@ START → llm_call → (tool_node or END)
 python 01_quickstart.py
 ```
 
-Runs both demos: Graph API and Functional API.
+Running the file exports a Mermaid diagram and executes both demos.
