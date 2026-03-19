@@ -3,7 +3,7 @@
     "./agentic_files"
   ],
   "graphs": {
-    "calculator": "./agentic_files/server_graph_registry.py:graph_07_handoffs"
+    "calculator": "./agentic_files/server_graph_registry.py:graph_01_quickstart"
   },
   "env": ".env"
 }

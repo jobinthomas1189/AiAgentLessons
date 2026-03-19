@@ -57,9 +57,10 @@ pip install -r agentic_files/requirements.txt
 ./run_langgraph_server.sh 0
 ```
 
+
 - **API**: http://localhost:2024
 - **Docs**: http://localhost:2024/docs
-- **Studio**: Opens in browser for visualization and debugging
+- **Studio**: Link is in terminal when you './run_langgraph_server.sh 0'
 
 Test with the SDK:
 
